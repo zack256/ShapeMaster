@@ -6,6 +6,43 @@ using UnityEngine;
 public class MeshMaker : MonoBehaviour
 {
 
+    // Stuff might not work yet if you have a vertical slope!
+
+    Vector2[] triangle = {
+        new Vector2(0, 0),
+        new Vector2(3, 0),
+        new Vector2(3, 4),
+    };
+    Vector2[] convexQuadrilateral = {
+        new Vector2(-3, -2),
+        new Vector2(6, -2),
+        new Vector2(8, 4),
+        new Vector2(2, 6),
+    };
+    Vector2[] kite = {
+        new Vector2(-2, -3),
+        new Vector2(0, 0),
+        new Vector2(2, -4),
+        new Vector2(0, 6),
+    };
+    Vector2[] reversedKite = {
+        new Vector2(-2, -3),
+        new Vector2(0, 6),
+        new Vector2(2, -4),
+        new Vector2(0, 0),
+    };
+    float[] advancedKite = {
+        0, 5,
+        -5, -4,
+        -3, -2,
+        -1, -1,
+        1, -1,
+        3, -2,
+        5, -4
+    };
+    float[] arch = {
+        7, 8, 10, 14, 16, 11, 13.5f, 6.5f, 12, 7.5f, 13, 10, 11, 11, 9, 7
+    };
     void PrintList<T> (T[] l) {
         int n = l.Length;
         string[] pr = new string[n];
@@ -58,6 +95,38 @@ public class MeshMaker : MonoBehaviour
         }
     }
 
+    bool PointIsInTriangle (Vector2 A, Vector2 B, Vector2 C, Vector2 X) {
+        // Inclusive.
+        //Vector2 AB = B - A;
+        //Vector2 BC = C - B;
+        //Vector2 CA = A - C;
+        float aSlope = CalcSlope(B, C);
+        float bSlope = CalcSlope(C, A);
+        float cSlope = CalcSlope(A, B);
+        float aYInt = B.y - aSlope * B.x;
+        float bYInt = C.y - bSlope * C.x;
+        float cYInt = A.y - cSlope * A.x;
+        float aRes = X.y - (aSlope * X.x + aYInt);
+        float bRes = X.y - (bSlope * X.x + bYInt);
+        float cRes = X.y - (cSlope * X.x + cYInt);
+        if (aRes == 0 || bRes == 0 || cRes == 0) {
+            return true;
+        }
+        float aaRes = A.y - (aSlope * A.x + aYInt);
+        if (Mathf.Sign(aRes) != Mathf.Sign(aaRes)) {
+            return false;
+        }
+        float bbRes = B.y - (bSlope * B.x + bYInt);
+        if (Mathf.Sign(bRes) != Mathf.Sign(bbRes)) {
+            return false;
+        }
+        float ccRes = C.y - (cSlope * C.x + cYInt);
+        if (Mathf.Sign(cRes) != Mathf.Sign(ccRes)) {
+            return false;
+        }
+        return true;
+    }
+
     bool CalcIntersection (Vector2 A, Vector2 B, Vector2 C, Vector2 D, Vector2 intersection) {
         // Calcs if the line segment AB intersects the line CD.
         // Returns bool denoting if intersection exists,
@@ -81,7 +150,6 @@ public class MeshMaker : MonoBehaviour
     float[] GetInteriorAngles (Vector2[] vertices) {
         int n = vertices.Length;
         float[] thetas = new float[n];
-        print(n);
         for (int i = 0; i < n; i++) {
             Vector2 B = vertices[i];
             Vector2 A = vertices[Mod(i - 1, n)];
@@ -120,41 +188,59 @@ public class MeshMaker : MonoBehaviour
             isConvex[i] = thetas[i] < Mathf.PI;
             degs[i] = RadiansToDegrees(thetas[i]);
         }
-        //PrintList(thetas);
-        PrintList(degs);
-        PrintList(isConvex);
+        //PrintList(degs);
+        //PrintList(isConvex);
         return isConvex;
     }
 
+    bool VertexIsEar (int n, Vector2[] vertices, bool[] isConvex, int idx) {
+        // To check if a vertex is a leaf, we can probably just check
+        // if there are no points within the triangle to be created.
+        if (!isConvex[idx]) {
+            // A connecting edge between the neighbors of a non-convex
+            // vertex won't be in the polygon.
+            return false;
+        }
+        for (int i = 0; i < n; i++) {
+            int leftIdx = Mod(idx - 1, n);
+            int rightIdx = Mod(idx + 1, n);
+            if (i == idx || i == leftIdx || i == rightIdx) {
+                continue;
+            }
+            if (PointIsInTriangle(vertices[leftIdx], vertices[idx], vertices[rightIdx], vertices[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
 
+    void FindAllEars (Vector2[] vertices) {
+        int n = vertices.Length;
+        bool[] isConvex = ClassifyConvexVertices(vertices);
+        bool[] isEar = new bool[n];
+        for (int i = 0; i < n; i++) {
+            isEar[i] = VertexIsEar(n, vertices, isConvex, i);
+        }
+        PrintList(isEar);
+    }
+
+    Vector2[] VertexArrFromArr (float[] nums) {
+        Vector2[] res = new Vector2[nums.Length / 2];
+        for (int i = 0; i < nums.Length; i += 2) {
+            res[i / 2] = new Vector2(nums[i], nums[i + 1]);
+        }
+        return res;
+    }
 
     void Start () {
-        Vector2[] triangle = {
-            new Vector2(0, 0),
-            new Vector2(3, 0),
-            new Vector2(3, 4),
-        };
-        Vector2[] convexQuadrilateral = {
-            new Vector2(-3, -2),
-            new Vector2(6, -2),
-            new Vector2(8, 4),
-            new Vector2(2, 6),
-        };
-        Vector2[] kite = {
-            new Vector2(-2, -3),
-            new Vector2(0, 0),
-            new Vector2(2, -4),
-            new Vector2(0, 6),
-        };
-        Vector2[] reversedKite = {
-            new Vector2(-2, -3),
-            new Vector2(0, 6),
-            new Vector2(2, -4),
-            new Vector2(0, 0),
-        };
-        ClassifyConvexVertices(convexQuadrilateral);
-        ClassifyConvexVertices(kite);
-        ClassifyConvexVertices(reversedKite);
+        //ClassifyConvexVertices(convexQuadrilateral);
+        //ClassifyConvexVertices(kite);
+        //ClassifyConvexVertices(reversedKite);
+        FindAllEars(convexQuadrilateral);
+        FindAllEars(kite);
+        FindAllEars(reversedKite);
+        FindAllEars(VertexArrFromArr(advancedKite));
+        FindAllEars(VertexArrFromArr(arch));
     }
 
 }
