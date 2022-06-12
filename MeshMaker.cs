@@ -262,9 +262,23 @@ public class MeshMaker : MonoBehaviour
             List<bool> isConvex = ClassifyConvexVertices(vertices);
             for (int j = 0; j < verticesRemaining; j++) {
                 if (VertexIsEar(vertices, isConvex, j)) {
-                    triangles[3 * i] = idxs[Mod(j - 1, verticesRemaining)];
+                    int leftIdx = Mod(j - 1, verticesRemaining);
+                    int rightIdx = Mod(j + 1, verticesRemaining);
+                    Vector2 A = vertices[leftIdx];
+                    Vector2 B = vertices[j];
+                    Vector2 C = vertices[rightIdx];
+                    Vector2 BA = A - B;
+                    Vector2 BC = C - B;
+                    float signedCross = BA.y * BC.x - BA.x * BC.y;
                     triangles[3 * i + 1] = idxs[j];
-                    triangles[3 * i + 2] = idxs[Mod(j + 1, verticesRemaining)];
+                    // Fixes orientation prob.
+                    if (signedCross < 0) {
+                        triangles[3 * i] = idxs[leftIdx];
+                        triangles[3 * i + 2] = idxs[rightIdx];
+                    } else {
+                        triangles[3 * i] = idxs[rightIdx];
+                        triangles[3 * i + 2] = idxs[leftIdx];
+                    }
                     vertices.RemoveAt(j);
                     idxs.RemoveAt(j);
                     break;
@@ -275,15 +289,58 @@ public class MeshMaker : MonoBehaviour
         return triangles;
     }
 
-    void Start () {
+    Vector3[] Vector2VertexListToVector3Arr (List<Vector2> vertices) {
+        int n = vertices.Count;
+        Vector3[] arr = new Vector3[n];
+        for (int i = 0; i < n; i++) {
+            arr[i] = new Vector3(vertices[i].x, 0, vertices[i].y);
+        }
+        return arr;
+    }
+
+    Vector2[] CalcNewUVs (List<Vector2> vertices) {
+        // Will revisit/test maybe.
+        int numVertices = vertices.Count;
+        Vector2[] newUVs = new Vector2[numVertices];
+        for (int i = 0; i < numVertices; i++) {
+            newUVs[i] = new Vector2(vertices[i].x, vertices[i].y);
+        }
+        return newUVs;
+    }
+
+    void RedoMesh (List<Vector2> vertices) {
+        int[] triangles = FindTrianglesForMesh(vertices);
+        Vector2[] uvs = CalcNewUVs(vertices);
+        Mesh mesh = gameObject.GetComponent<MeshFilter>().mesh;
+        mesh.Clear();
+        mesh.vertices = Vector2VertexListToVector3Arr(vertices);
+        mesh.triangles = triangles;
+        mesh.uv = uvs;
+        mesh.RecalculateNormals();
+        Destroy(gameObject.GetComponent<MeshCollider>());
+        MeshCollider meshCollider = gameObject.AddComponent<MeshCollider>();
+        meshCollider.sharedMesh = mesh;
+    }
+
+    void OldStart () {
+        /**
         //ClassifyConvexVertices(convexQuadrilateral);
         //ClassifyConvexVertices(kite);
         //ClassifyConvexVertices(reversedKite);
+        **/
+        /**
         FindTrianglesForMesh(convexQuadrilateral);
         FindTrianglesForMesh(kite);
         FindTrianglesForMesh(reversedKite);
         FindTrianglesForMesh(VertexListFromList(advancedKite));
         FindTrianglesForMesh(VertexListFromList(arch));
+        **/
+
+    }
+
+    void Start () {
+        RedoMesh(reversedKite);
+        //RedoMesh(VertexListFromList(advancedKite));
     }
 
 }
