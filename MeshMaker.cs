@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class MeshMaker : MonoBehaviour
@@ -8,30 +9,30 @@ public class MeshMaker : MonoBehaviour
 
     // Stuff might not work yet if you have a vertical slope!
 
-    Vector2[] triangle = {
+    List<Vector2> triangle = new List<Vector2> {
         new Vector2(0, 0),
         new Vector2(3, 0),
         new Vector2(3, 4),
     };
-    Vector2[] convexQuadrilateral = {
+    List<Vector2> convexQuadrilateral = new List<Vector2> {
         new Vector2(-3, -2),
         new Vector2(6, -2),
         new Vector2(8, 4),
         new Vector2(2, 6),
     };
-    Vector2[] kite = {
+    List<Vector2> kite = new List<Vector2> {
         new Vector2(-2, -3),
         new Vector2(0, 0),
         new Vector2(2, -4),
         new Vector2(0, 6),
     };
-    Vector2[] reversedKite = {
+    List<Vector2> reversedKite = new List<Vector2> {
         new Vector2(-2, -3),
         new Vector2(0, 6),
         new Vector2(2, -4),
         new Vector2(0, 0),
     };
-    float[] advancedKite = {
+    List<float> advancedKite = new List<float> {
         0, 5,
         -5, -4,
         -3, -2,
@@ -40,11 +41,19 @@ public class MeshMaker : MonoBehaviour
         3, -2,
         5, -4
     };
-    float[] arch = {
+    List<float> arch = new List<float> {
         7, 8, 10, 14, 16, 11, 13.5f, 6.5f, 12, 7.5f, 13, 10, 11, 11, 9, 7
     };
-    void PrintList<T> (T[] l) {
+    void PrintArr<T> (T[] l) {
         int n = l.Length;
+        string[] pr = new string[n];
+        for (int i = 0; i < n; i++) {
+            pr[i] = Convert.ToString(l[i]);
+        }
+        print("[" + String.Join(", ", pr) + "]");
+    }
+    void PrintList<T> (List<T> l) {
+        int n = l.Count;
         string[] pr = new string[n];
         for (int i = 0; i < n; i++) {
             pr[i] = Convert.ToString(l[i]);
@@ -97,9 +106,6 @@ public class MeshMaker : MonoBehaviour
 
     bool PointIsInTriangle (Vector2 A, Vector2 B, Vector2 C, Vector2 X) {
         // Inclusive.
-        //Vector2 AB = B - A;
-        //Vector2 BC = C - B;
-        //Vector2 CA = A - C;
         float aSlope = CalcSlope(B, C);
         float bSlope = CalcSlope(C, A);
         float cSlope = CalcSlope(A, B);
@@ -147,8 +153,8 @@ public class MeshMaker : MonoBehaviour
         return IsBetween(A.x, C.x, Ex);
     }
 
-    float[] GetInteriorAngles (Vector2[] vertices) {
-        int n = vertices.Length;
+    float[] GetInteriorAngles (List<Vector2> vertices) {
+        int n = vertices.Count;
         float[] thetas = new float[n];
         for (int i = 0; i < n; i++) {
             Vector2 B = vertices[i];
@@ -176,26 +182,30 @@ public class MeshMaker : MonoBehaviour
         return thetas;
     }
 
-    bool[] ClassifyConvexVertices (Vector2[] vertices) {
+    //bool[] ClassifyConvexVertices (Vector2[] vertices) {
+    List<bool> ClassifyConvexVertices (List<Vector2> vertices) {
         // Classifies vertices as convex or not.
         // A convex vertex is probably just one with
         // angle < 180.
-        int n = vertices.Length;
-        bool[] isConvex = new bool[n];
+        int n = vertices.Count;
+        //bool[] isConvex = new bool[n];
+        List<bool> isConvex = new List<bool>();
         float[] thetas = GetInteriorAngles(vertices);
         float[] degs = new float[n];
         for (int i = 0; i < n; i++) {
-            isConvex[i] = thetas[i] < Mathf.PI;
+            //isConvex[i] = thetas[i] < Mathf.PI;
+            isConvex.Add(thetas[i] < Mathf.PI);
             degs[i] = RadiansToDegrees(thetas[i]);
         }
-        //PrintList(degs);
+        //PrintArr(degs);
         //PrintList(isConvex);
         return isConvex;
     }
 
-    bool VertexIsEar (int n, Vector2[] vertices, bool[] isConvex, int idx) {
+    bool VertexIsEar (List<Vector2> vertices, List<bool> isConvex, int idx) {
         // To check if a vertex is a leaf, we can probably just check
         // if there are no points within the triangle to be created.
+        int n = vertices.Count;
         if (!isConvex[idx]) {
             // A connecting edge between the neighbors of a non-convex
             // vertex won't be in the polygon.
@@ -214,33 +224,66 @@ public class MeshMaker : MonoBehaviour
         return true;
     }
 
-    void FindAllEars (Vector2[] vertices) {
-        int n = vertices.Length;
-        bool[] isConvex = ClassifyConvexVertices(vertices);
+    void FindAllEars (List<Vector2> vertices) {
+        // Debug func.
+        int n = vertices.Count;
+        List<bool> isConvex = ClassifyConvexVertices(vertices);
         bool[] isEar = new bool[n];
         for (int i = 0; i < n; i++) {
-            isEar[i] = VertexIsEar(n, vertices, isConvex, i);
+            isEar[i] = VertexIsEar(vertices, isConvex, i);
         }
-        PrintList(isEar);
+        PrintArr(isEar);
     }
 
-    Vector2[] VertexArrFromArr (float[] nums) {
-        Vector2[] res = new Vector2[nums.Length / 2];
-        for (int i = 0; i < nums.Length; i += 2) {
-            res[i / 2] = new Vector2(nums[i], nums[i + 1]);
+    List<Vector2> VertexListFromList (List<float> nums) {
+        List<Vector2> res = new List<Vector2>();
+        for (int i = 0; i < nums.Count; i += 2) {
+            //res[i / 2] = new Vector2(nums[i], nums[i + 1]);
+            res.Add(new Vector2(nums[i], nums[i + 1]));
         }
         return res;
+    }
+
+    List<int> ListOfNumbersInOrder (int n) {
+        List<int> res = new List<int>();
+        for (int i = 0; i < n; i++) {
+            res.Add(i);
+        }
+        return res;
+    }
+
+    int[] FindTrianglesForMesh (List<Vector2> vertices0) {
+        int n = vertices0.Count;
+        int[] triangles = new int[3 * (n - 2)];
+        List<Vector2> vertices = new List<Vector2>(vertices0);
+        List<int> idxs = ListOfNumbersInOrder(n);
+        for (int i = 0; i < n - 2; i++) {
+            int verticesRemaining = vertices.Count;
+            List<bool> isConvex = ClassifyConvexVertices(vertices);
+            for (int j = 0; j < verticesRemaining; j++) {
+                if (VertexIsEar(vertices, isConvex, j)) {
+                    triangles[3 * i] = idxs[Mod(j - 1, verticesRemaining)];
+                    triangles[3 * i + 1] = idxs[j];
+                    triangles[3 * i + 2] = idxs[Mod(j + 1, verticesRemaining)];
+                    vertices.RemoveAt(j);
+                    idxs.RemoveAt(j);
+                    break;
+                }
+            }
+        }
+        PrintArr(triangles);
+        return triangles;
     }
 
     void Start () {
         //ClassifyConvexVertices(convexQuadrilateral);
         //ClassifyConvexVertices(kite);
         //ClassifyConvexVertices(reversedKite);
-        FindAllEars(convexQuadrilateral);
-        FindAllEars(kite);
-        FindAllEars(reversedKite);
-        FindAllEars(VertexArrFromArr(advancedKite));
-        FindAllEars(VertexArrFromArr(arch));
+        FindTrianglesForMesh(convexQuadrilateral);
+        FindTrianglesForMesh(kite);
+        FindTrianglesForMesh(reversedKite);
+        FindTrianglesForMesh(VertexListFromList(advancedKite));
+        FindTrianglesForMesh(VertexListFromList(arch));
     }
 
 }
