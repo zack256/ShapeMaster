@@ -1,2 +1,4 @@
-MeshMaker.cs.meta
 MeshTest*
+*.meta
+Testing
+.DS_Store

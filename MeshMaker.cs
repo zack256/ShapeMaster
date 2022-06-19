@@ -308,7 +308,7 @@ public class MeshMaker : MonoBehaviour
         return newUVs;
     }
 
-    void RedoMesh (List<Vector2> vertices) {
+    public void RedoMesh (List<Vector2> vertices) {
         int[] triangles = FindTrianglesForMesh(vertices);
         Vector2[] uvs = CalcNewUVs(vertices);
         Mesh mesh = gameObject.GetComponent<MeshFilter>().mesh;
@@ -339,7 +339,7 @@ public class MeshMaker : MonoBehaviour
     }
 
     void Start () {
-        RedoMesh(reversedKite);
+        //RedoMesh(reversedKite);
         //RedoMesh(VertexListFromList(advancedKite));
     }
 
