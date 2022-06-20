@@ -9,29 +9,6 @@ public class MeshMaker : MonoBehaviour
 
     // Stuff might not work yet if you have a vertical slope!
 
-    List<Vector2> triangle = new List<Vector2> {
-        new Vector2(0, 0),
-        new Vector2(3, 0),
-        new Vector2(3, 4),
-    };
-    List<Vector2> convexQuadrilateral = new List<Vector2> {
-        new Vector2(-3, -2),
-        new Vector2(6, -2),
-        new Vector2(8, 4),
-        new Vector2(2, 6),
-    };
-    List<Vector2> kite = new List<Vector2> {
-        new Vector2(-2, -3),
-        new Vector2(0, 0),
-        new Vector2(2, -4),
-        new Vector2(0, 6),
-    };
-    List<Vector2> reversedKite = new List<Vector2> {
-        new Vector2(-2, -3),
-        new Vector2(0, 6),
-        new Vector2(2, -4),
-        new Vector2(0, 0),
-    };
     List<float> advancedKite = new List<float> {
         0, 5,
         -5, -4,
@@ -105,7 +82,7 @@ public class MeshMaker : MonoBehaviour
     }
 
     bool PointIsInTriangle (Vector2 A, Vector2 B, Vector2 C, Vector2 X) {
-        // Inclusive.
+        // Edge inclusive.
         float aSlope = CalcSlope(B, C);
         float bSlope = CalcSlope(C, A);
         float cSlope = CalcSlope(A, B);
@@ -188,17 +165,13 @@ public class MeshMaker : MonoBehaviour
         // A convex vertex is probably just one with
         // angle < 180.
         int n = vertices.Count;
-        //bool[] isConvex = new bool[n];
         List<bool> isConvex = new List<bool>();
         float[] thetas = GetInteriorAngles(vertices);
         float[] degs = new float[n];
         for (int i = 0; i < n; i++) {
-            //isConvex[i] = thetas[i] < Mathf.PI;
             isConvex.Add(thetas[i] < Mathf.PI);
             degs[i] = RadiansToDegrees(thetas[i]);
         }
-        //PrintArr(degs);
-        //PrintList(isConvex);
         return isConvex;
     }
 
@@ -238,7 +211,6 @@ public class MeshMaker : MonoBehaviour
     List<Vector2> VertexListFromList (List<float> nums) {
         List<Vector2> res = new List<Vector2>();
         for (int i = 0; i < nums.Count; i += 2) {
-            //res[i / 2] = new Vector2(nums[i], nums[i + 1]);
             res.Add(new Vector2(nums[i], nums[i + 1]));
         }
         return res;
@@ -320,27 +292,6 @@ public class MeshMaker : MonoBehaviour
         Destroy(gameObject.GetComponent<MeshCollider>());
         MeshCollider meshCollider = gameObject.AddComponent<MeshCollider>();
         meshCollider.sharedMesh = mesh;
-    }
-
-    void OldStart () {
-        /**
-        //ClassifyConvexVertices(convexQuadrilateral);
-        //ClassifyConvexVertices(kite);
-        //ClassifyConvexVertices(reversedKite);
-        **/
-        /**
-        FindTrianglesForMesh(convexQuadrilateral);
-        FindTrianglesForMesh(kite);
-        FindTrianglesForMesh(reversedKite);
-        FindTrianglesForMesh(VertexListFromList(advancedKite));
-        FindTrianglesForMesh(VertexListFromList(arch));
-        **/
-
-    }
-
-    void Start () {
-        //RedoMesh(reversedKite);
-        //RedoMesh(VertexListFromList(advancedKite));
     }
 
 }
